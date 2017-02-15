@@ -57,6 +57,6 @@ Details on the restic repository format can be found in the [restic design docum
 
 ```
 # restic version
-restic 0.3.3 (v0.3.3-0-g4d93da9)
-compiled with go1.7.4 on linux/386
+restic 0.4.0 (v0.4.0-0-ga7c2f28-dirty)
+compiled with go1.7.5 on linux/386
 ```
