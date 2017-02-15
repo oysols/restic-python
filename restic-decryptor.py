@@ -13,6 +13,7 @@ from Crypto.Util import Counter
 import json
 import base64
 import scrypt
+import os
 
 def decrypt(masterkey, data):
     """Decrypt ciphertext with master key
@@ -47,8 +48,8 @@ def get_masterkey(keyfile, password):
     masterkey = masterkey_json['encrypt']
     return base64.b64decode(masterkey)
 
-def decrypt_packfile(masterkey, filename):
-    """Decrypt all content of a pack file and return json"""
+def decrypt_packfile(masterkey, filename, decrypt_content=True):
+    """Decrypt all content of a pack file and return dict"""
 
     with open(filename, "rb") as f:
         data = f.read()
@@ -66,10 +67,11 @@ def decrypt_packfile(masterkey, filename):
         blob['offset'] = data_offset
         blob['length'] = int.from_bytes(header[1 + header_offset:5 + header_offset], byteorder="little")
         blob['id'] = hexlify(header[5 + header_offset:32+5 + header_offset])
-        blob['decrypted_content'] = decrypt(masterkey, data[blob['offset']:blob['offset']+blob['length']])
+        if decrypt_content:
+            blob['decrypted_content'] = decrypt(masterkey, data[blob['offset']:blob['offset']+blob['length']])
         blobs.append(blob)
         data_offset += blob['length']
-    return blobs
+    return blobs, header_length
 
 def decrypt_config_index_snapshot(masterkey, filename):
     """Decrypt config, indexes, or snapshots"""
@@ -86,13 +88,50 @@ def test_simple_decrypt():
     if res != b'Dies ist ein Test!':
         raise Exception("Decryption failed")
 
+def get_pack_content_lengths(masterkey, filename):
+    """Count lengths of pack file contents by type"""
+
+    header_len = 0
+    tree_len = 0
+    data_len = 0
+    blobs, header_len = decrypt_packfile(masterkey, filename, decrypt_content=False)
+    for i in blobs:
+        if i['type'] == "tree":
+            tree_len += i['length']
+        elif i['type'] == "data":
+            data_len += i['length']
+        else:
+            raise Exception()
+    return header_len, tree_len, data_len
+
+def get_all_pack_content_lengths(masterkey, path):
+    """Summarize all pack file content lengths by type"""
+
+    header_len = 0
+    tree_len = 0
+    data_len = 0
+    for dirname, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            h, t, d = get_pack_content_lengths(masterkey, os.path.join(dirname, filename))
+            header_len += h
+            tree_len += t
+            data_len += d
+        print("dir: {} h:{} t:{} d:{}".format(dirname, header_len, tree_len, data_len))
+    print("header_length:{: >15}\ntree_length:  {: >15}\ndata_length:  {: >15}".format(header_len, tree_len, data_len))
+    return header_len, tree_len, data_len
+
 if __name__=="__main__":
 
     test_simple_decrypt() # simple test
 
     # password = b"test"
-    # masterkey = get_masterkey("repo/keys/da2d94d8ef4aa70febb2a248c5d8511f30f0ed4e21abd83fed8eba036c90be8e", password)
-    # print(decrypt_config_index_snapshot(masterkey, "repo/snapshots/ae73930431bb74f0589ac462339bb1c1b48040cda208cfa2d59978c8575a736d"))
+    # masterkey = get_masterkey("repo/keys/e67c41...", password)
+
+    # print(decrypt_packfile(masterkey, "repo/data/96/96ff07..."))
+
+    # print(decrypt_config_index_snapshot(masterkey, "repo/snapshots/ae73930..."))
     # print(decrypt_config_index_snapshot(masterkey, "repo/config"))
-    # print(decrypt_config_index_snapshot(masterkey, "repo/index/e6b2f85cb46d978dd841d2dd183a21300081992259c265bcb2500e31a26651a4"))
-    # print(decrypt_packfile(masterkey, "repo/data/96/96f1f07039a147e0e3bbcf99a5b3a86119769db291a226dc28db51583c655243"))
+    # print(decrypt_config_index_snapshot(masterkey, "repo/index/e6b2f8..."))
+
+    # print(get_pack_content_lengths(masterkey, "repo/data/96/96ff07..."))
+    # get_all_pack_content_lengths(masterkey, "repo/data")

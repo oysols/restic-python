@@ -14,6 +14,7 @@ The following features are implemented:
 - Decryption of master key
 - Decryption of the `IV || ciphertext || MAC` format using AES-256 CTR
 - Parsing and decryption of the restic pack format
+- Pack file content lengths based on type
 
 The following features are NOT implemented:
 
@@ -43,9 +44,16 @@ The following features are NOT implemented:
         'id': b'9b86a829a4eb4fecd9801f667511967a53a09ad4a4a7bac6efcc4c9dd2a0b9bb'
     }
 ]
+>>> get_all_pack_content_lengths(masterkey, "repo/data")
+dir: repo/data h:0 t:0 d:0
+dir: repo/data/15 h:106 t:331 d:92
+dir: repo/data/1e h:212 t:662 d:198
+header_length:            212
+tree_length:              662
+data_length:              198
 ```
 
-Details on the resitc repository format can be found in the [restic design document](https://restic.readthedocs.io/en/latest/Design/).
+Details on the restic repository format can be found in the [restic design document](https://restic.readthedocs.io/en/latest/Design/).
 
 ```
 # restic version
