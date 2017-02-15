@@ -45,12 +45,12 @@ The following features are NOT implemented:
     }
 ]
 >>> get_all_pack_content_lengths(masterkey, "repo/data")
-dir: repo/data h:0 t:0 d:0
-dir: repo/data/15 h:106 t:331 d:92
-dir: repo/data/1e h:212 t:662 d:198
-header_length:            212
-tree_length:              662
-data_length:              198
+header_length:        8688549
+tree_length:         53898054
+data_length:     146443506727
+treeblobs:               8466
+datablobs:             200975
+packfiles:              29351
 ```
 
 Details on the restic repository format can be found in the [restic design document](https://restic.readthedocs.io/en/latest/Design/).

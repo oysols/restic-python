@@ -94,15 +94,24 @@ def get_pack_content_lengths(masterkey, filename):
     header_len = 0
     tree_len = 0
     data_len = 0
+    tree_num = 0
+    data_num = 0
     blobs, header_len = decrypt_packfile(masterkey, filename, decrypt_content=False)
     for i in blobs:
         if i['type'] == "tree":
             tree_len += i['length']
+            tree_num += 1
         elif i['type'] == "data":
             data_len += i['length']
+            data_num += 1
         else:
             raise Exception()
-    return header_len, tree_len, data_len
+    return {"header_len": header_len,
+            "tree_len": tree_len,
+            "data_len": data_len,
+            "tree_num": tree_num,
+            "data_num": data_num,
+            }
 
 def get_all_pack_content_lengths(masterkey, path):
     """Summarize all pack file content lengths by type"""
@@ -110,15 +119,22 @@ def get_all_pack_content_lengths(masterkey, path):
     header_len = 0
     tree_len = 0
     data_len = 0
+    tree_num = 0
+    data_num = 0
+    pack_num = 0
     for dirname, dirnames, filenames in os.walk(path):
         for filename in filenames:
-            h, t, d = get_pack_content_lengths(masterkey, os.path.join(dirname, filename))
-            header_len += h
-            tree_len += t
-            data_len += d
-        print("dir: {} h:{} t:{} d:{}".format(dirname, header_len, tree_len, data_len))
-    print("header_length:{: >15}\ntree_length:  {: >15}\ndata_length:  {: >15}".format(header_len, tree_len, data_len))
-    return header_len, tree_len, data_len
+            res = get_pack_content_lengths(masterkey, os.path.join(dirname, filename))
+            header_len += res["header_len"]
+            tree_len += res["tree_len"]
+            data_len += res["data_len"]
+            tree_num += res["tree_num"]
+            data_num += res["data_num"]
+            pack_num += 1
+        print("---- dir: {} ----".format(dirname))
+        print("header_length:{: >15}\ntree_length:  {: >15}\ndata_length:  {: >15}".format(header_len, tree_len, data_len))
+        print("treeblobs:    {: >15}\ndatablobs:    {: >15}\npackfiles:    {: >15}".format(tree_num, data_num, pack_num))
+    print("---- Done ----")
 
 if __name__=="__main__":
 
