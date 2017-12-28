@@ -31,17 +31,19 @@ def decrypt(masterkey, data):
     crypto = AES.new(masterkey, AES.MODE_CTR, counter=Counter.new(128, initial_value=iv_int, little_endian=False))
     return crypto.decrypt(ciphertext)
 
+# repository/key.go
 def get_masterkey(keyfile, password):
     """Decrypt masterkey from key file"""
 
     with open(keyfile, "rb") as f:
         keyfile_json = json.loads(str(f.read(), "utf-8"))
+    if keyfile_json.get("kdf","scrypt") != "scrypt":
+        raise Exception("only scrypt KDF supported")
     salt = keyfile_json['salt']
     data = keyfile_json['data']
-
     # Hash password with scrypt
-    key = scrypt.hash(password, base64.b64decode(salt), N=16384, r=8, p=1)
-
+    key = scrypt.hash(password, base64.b64decode(salt), N=keyfile_json.get("N",16384), r=keyfile_json.get("r",8), p=keyfile_json.get("p",1))
+ 
     # Decode master key from data
     masterkey_data = decrypt(key[:32], base64.b64decode(data))
     masterkey_json = json.loads(str(masterkey_data, 'utf-8'))
